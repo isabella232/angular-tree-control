@@ -38,7 +38,8 @@
                     orderBy: "@",
                     reverseOrder: "@",
                     filterExpression: "=?",
-                    filterComparator: "=?"
+                    filterComparator: "=?",
+                    disabledExpression: "=?",
                 },
                 controller: ['$scope', function( $scope ) {
 
@@ -113,18 +114,24 @@
                             return false;
                         }
                     }
+                    $scope.disabledExpression = (angular.isFunction($scope.disabledExpression) ? $scope.disabledExpression : function () { return false; })
 
                     $scope.headClass = function(node) {
                         var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
                         var injectSelectionClass = "";
                         if (liSelectionClass && isSelectedNode(node))
                             injectSelectionClass = " " + liSelectionClass;
+
+                        var output = ""
                         if ($scope.options.isLeaf(node))
-                            return "tree-leaf" + injectSelectionClass;
+                            output = "tree-leaf" + injectSelectionClass;
                         if ($scope.expandedNodesMap[this.$id])
-                            return "tree-expanded" + injectSelectionClass;
+                            output = "tree-expanded" + injectSelectionClass;
                         else
-                            return "tree-collapsed" + injectSelectionClass;
+                            output = "tree-collapsed" + injectSelectionClass;
+                        if ($scope.disabledExpression(node))
+                            output = [output, "disabled"].join(" ");
+                        return output;
                     };
 
                     $scope.iBranchClass = function() {
@@ -139,6 +146,7 @@
                     };
 
                     $scope.selectNodeHead = function() {
+                        if ($scope.disabledExpression(this.node)) return;
                         var expanding = $scope.expandedNodesMap[this.$id] === undefined;
                         $scope.expandedNodesMap[this.$id] = (expanding ? this.node : undefined);
                         if (expanding) {
@@ -159,6 +167,7 @@
                     };
 
                     $scope.selectNodeLabel = function( selectedNode ){
+                        if ($scope.disabledExpression(selectedNode)) return;
                         if (selectedNode[$scope.options.nodeChildren] && selectedNode[$scope.options.nodeChildren].length > 0 &&
                             !$scope.options.dirSelectable) {
                             this.selectNodeHead();
