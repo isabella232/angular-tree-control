@@ -134,6 +134,11 @@
                             output = "tree-collapsed" + injectSelectionClass;
                         }
 
+                        // Hack for showing and hiding the expandor triangle
+                        if (!$scope.options.isLeaf(node) && !node[$scope.options.nodeChildren].length) {
+                            output = output + " no-children";
+                        }
+
                         if ($scope.disabledExpression && $scope.disabledExpression(node))
                             output = [output, "disabled"].join(" ");
 
@@ -173,9 +178,11 @@
                     };
 
                     $scope.selectNodeLabel = function( selectedNode ){
+
                         if ($scope.disabledExpression(selectedNode)) return;
-                        if (selectedNode[$scope.options.nodeChildren] && selectedNode[$scope.options.nodeChildren].length > 0 &&
-                            !$scope.options.dirSelectable) {
+
+                        // From https://github.com/wix/angular-tree-control/pull/122/files
+                        if(!$scope.options.isLeaf(selectedNode) && !$scope.options.dirSelectable) {
                             this.selectNodeHead();
                         }
                         else {
@@ -228,10 +235,10 @@
                     var template =
                         '<ul '+classIfDefined($scope.options.injectClasses.ul, true)+'>' +
                             '<li ng-repeat="node in node.' + $scope.options.nodeChildren + ' | filter:filterExpression:filterComparator ' + orderBy + '" ng-class="headClass(node)" '+classIfDefined($scope.options.injectClasses.li, true)+'>' +
-                            '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
-                            '<i class="tree-leaf-head '+classIfDefined($scope.options.injectClasses.iLeaf, false)+'"></i>' +
-                            '<div class="tree-label '+classIfDefined($scope.options.injectClasses.label, false)+'" ng-class="selectedClass()" ng-click="selectNodeLabel(node)" tree-transclude></div>' +
-                            '<treeitem ng-if="nodeExpanded()"></treeitem>' +
+                                '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
+                                '<i class="tree-leaf-head '+classIfDefined($scope.options.injectClasses.iLeaf, false)+'"></i>' +
+                                '<div class="tree-label '+classIfDefined($scope.options.injectClasses.label, false)+'" ng-class="selectedClass()" ng-click="selectNodeLabel(node)" tree-transclude></div>' +
+                                '<treeitem ng-if="nodeExpanded()"></treeitem>' +
                             '</li>' +
                             '</ul>';
 
