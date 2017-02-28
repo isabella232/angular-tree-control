@@ -38,7 +38,8 @@
                     orderBy: "@",
                     reverseOrder: "@",
                     filterExpression: "=?",
-                    filterComparator: "=?"
+                    filterComparator: "=?",
+                    disabledExpression: "=?",
                 },
                 controller: ['$scope', function( $scope ) {
 
@@ -114,17 +115,34 @@
                         }
                     }
 
+                    if (!angular.isFunction($scope.disabledExpression)) {
+                        $scope.disabledExpression = function() { return false; }
+                    }
+
                     $scope.headClass = function(node) {
                         var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
                         var injectSelectionClass = "";
                         if (liSelectionClass && isSelectedNode(node))
                             injectSelectionClass = " " + liSelectionClass;
-                        if ($scope.options.isLeaf(node))
-                            return "tree-leaf" + injectSelectionClass;
-                        if ($scope.expandedNodesMap[this.$id])
-                            return "tree-expanded" + injectSelectionClass;
-                        else
-                            return "tree-collapsed" + injectSelectionClass;
+
+                        var output = ""
+                        if ($scope.options.isLeaf(node)) {
+                            output = "tree-leaf" + injectSelectionClass;
+                        } else if ($scope.expandedNodesMap[this.$id]) {
+                            output = "tree-expanded" + injectSelectionClass;
+                        } else {
+                            output = "tree-collapsed" + injectSelectionClass;
+                        }
+
+                        // Hack for showing and hiding the expandor triangle
+                        if (!$scope.options.isLeaf(node) && !node[$scope.options.nodeChildren].length) {
+                            output = output + " no-children";
+                        }
+
+                        if ($scope.disabledExpression && $scope.disabledExpression(node))
+                            output = [output, "disabled"].join(" ");
+
+                        return output;
                     };
 
                     $scope.iBranchClass = function() {
@@ -139,6 +157,7 @@
                     };
 
                     $scope.selectNodeHead = function() {
+                        if ($scope.disabledExpression(this.node)) return;
                         var expanding = $scope.expandedNodesMap[this.$id] === undefined;
                         $scope.expandedNodesMap[this.$id] = (expanding ? this.node : undefined);
                         if (expanding) {
@@ -159,8 +178,11 @@
                     };
 
                     $scope.selectNodeLabel = function( selectedNode ){
-                        if (selectedNode[$scope.options.nodeChildren] && selectedNode[$scope.options.nodeChildren].length > 0 &&
-                            !$scope.options.dirSelectable) {
+
+                        if ($scope.disabledExpression(selectedNode)) return;
+
+                        // From https://github.com/wix/angular-tree-control/pull/122/files
+                        if(!$scope.options.isLeaf(selectedNode) && !$scope.options.dirSelectable) {
                             this.selectNodeHead();
                         }
                         else {
@@ -213,10 +235,10 @@
                     var template =
                         '<ul '+classIfDefined($scope.options.injectClasses.ul, true)+'>' +
                             '<li ng-repeat="node in node.' + $scope.options.nodeChildren + ' | filter:filterExpression:filterComparator ' + orderBy + '" ng-class="headClass(node)" '+classIfDefined($scope.options.injectClasses.li, true)+'>' +
-                            '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
-                            '<i class="tree-leaf-head '+classIfDefined($scope.options.injectClasses.iLeaf, false)+'"></i>' +
-                            '<div class="tree-label '+classIfDefined($scope.options.injectClasses.label, false)+'" ng-class="selectedClass()" ng-click="selectNodeLabel(node)" tree-transclude></div>' +
-                            '<treeitem ng-if="nodeExpanded()"></treeitem>' +
+                                '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
+                                '<i class="tree-leaf-head '+classIfDefined($scope.options.injectClasses.iLeaf, false)+'"></i>' +
+                                '<div class="tree-label '+classIfDefined($scope.options.injectClasses.label, false)+'" ng-class="selectedClass()" ng-click="selectNodeLabel(node)" tree-transclude></div>' +
+                                '<treeitem ng-if="nodeExpanded()"></treeitem>' +
                             '</li>' +
                             '</ul>';
 
