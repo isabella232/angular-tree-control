@@ -114,7 +114,10 @@
                             return false;
                         }
                     }
-                    $scope.disabledExpression = (angular.isFunction($scope.disabledExpression) ? $scope.disabledExpression : function () { return false; })
+
+                    if (!angular.isFunction($scope.disabledExpression)) {
+                        $scope.disabledExpression = function() { return false; }
+                    }
 
                     $scope.headClass = function(node) {
                         var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
@@ -123,14 +126,17 @@
                             injectSelectionClass = " " + liSelectionClass;
 
                         var output = ""
-                        if ($scope.options.isLeaf(node))
+                        if ($scope.options.isLeaf(node)) {
                             output = "tree-leaf" + injectSelectionClass;
-                        if ($scope.expandedNodesMap[this.$id])
+                        } else if ($scope.expandedNodesMap[this.$id]) {
                             output = "tree-expanded" + injectSelectionClass;
-                        else
+                        } else {
                             output = "tree-collapsed" + injectSelectionClass;
-                        if ($scope.disabledExpression(node))
+                        }
+
+                        if ($scope.disabledExpression && $scope.disabledExpression(node))
                             output = [output, "disabled"].join(" ");
+
                         return output;
                     };
 
